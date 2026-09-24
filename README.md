@@ -18,4 +18,4 @@ The table below contains links to google colab for each respective week.
 
 ## Prerequisites
 
-Students are expected to be familiar with the Python programming language and basic concepts in probability and statistics.
+None, it is an introductory class. 
