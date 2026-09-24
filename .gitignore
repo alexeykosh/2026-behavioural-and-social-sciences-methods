@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# R session files
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+
+# R package build/check outputs
+*.Rcheck/
+*.tar.gz
