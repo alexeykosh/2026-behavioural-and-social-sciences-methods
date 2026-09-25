@@ -1,6 +1,5 @@
 ---
 title: "Introducing R with behavioural inhibition data"
-author: "Statistics class"
 output: html_document
 ---
 
