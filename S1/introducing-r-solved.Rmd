@@ -1,0 +1,278 @@
+---
+title: "Introducing R with behavioural inhibition data"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Run R code
+
+In this file, code goes inside chunks like the one below. Click **Knit** to run all 
+the chunks and make an HTML page.
+
+```{r}
+4 + 6
+(4 + 6) / 2
+```
+
+You can use the assignment operator to assign values to variables. For instance, 
+we can create a vector of values between 1 and 10.
+
+```{r}
+x <- 1:10
+```
+
+You can apply any mathematical operation to this vector of integers.
+
+```{r}
+x ** 2
+```
+
+```{r}
+sqrt(x)
+```
+
+Like in Python, you can use `#` to comment things out. 
+
+```{r}
+# 4 + 6
+# c <- 10
+```
+
+Finally, you can also run Python code inside the same environment, which is 
+convenient when you are working on a project that combines both.
+
+```{python}
+x = [_ for _ in range(1, 11)]
+print([i ** 2 for i in x])
+```
+
+
+## Objects, vectors, and functions
+
+`c()` makes a vector. R is case sensitive: `scores` and `Scores` are different names.
+
+```{r}
+scores <- c(180, 210, 195, 205, 1)  # four SSRT values
+scores
+length(scores)
+mean(scores)
+round(x=mean(scores), digits=0)
+```
+
+Try `?mean` in the Console for help.
+
+Use `[ ]` to select values. R starts counting at 1. A comparison returns
+`TRUE` or `FALSE` for each value.
+
+```{r}
+scores[1]
+scores > 200
+scores[scores > 200]
+```
+
+Numbers, text, and booleans are common types. `class()` shows the type of 
+a variable/value.
+
+```{r}
+class(scores)
+class("Negative")
+class(T)
+```
+
+`NA` means a missing value. Many functions need `na.rm = TRUE` to skip missing 
+values (otherwise they return an error).
+
+```{r}
+mean(c(180, NA, 205))
+mean(c(180, NA, 205), na.rm = TRUE)
+```
+
+## Data frames
+
+A data frame has rows for people and columns for variables. `$` selects a
+column; `[row, column]` selects part of a data frame.
+
+
+```{r}
+people <- data.frame(condition = c("Negative", "Neutral"),
+                     ssrt = c(180, 210))
+people
+people$ssrt
+people[1, 1]
+```
+
+## Load and check the study data
+
+We are going to look at Paál et al., 2015. In this paper, they were testing a 
+hypothesis that people from more deprived socio-economic backgrounds tend to be 
+more impulsive. To operationalise impulsivity, they relied on the stop-signal task.
+Participants have to press a key as fast as possible when a certain stimulus appears
+on the screen. However, if a (stop-)signal is played, the participants need to ignore
+the stimulus and not press any keys. The duration of the interval between the signal
+and the stimulus appearance is varied accross participants to estimate their
+inhibition period (how much time they need to stop oneself from responding). 
+
+The experiment had 58 participants. Each person completed a stop-signal
+task after a negative or neutral mood induction. They used mood as a control for 
+testing the effect of the socio-economic background on inhibition. We will look
+at SSRT (stop-signal reaction time) measures as a function of mood.
+
+Install tidyverse once in the Console with `install.packages("tidyverse")`. 
+Load it in each R session using the `libary()` function.
+
+```{r message=FALSE}
+library(tidyverse)
+
+d <- read_csv("https://dfzljdn9uc3pi.cloudfront.net/2015/964/1/data_supplement.csv")
+names(d)[1] <- "Participant"
+
+dim(d)
+```
+
+Let's look at the data. 
+
+```{r}
+head(d)
+```
+
+We can also look just at column names.
+
+```{r}
+names(d)
+```
+
+Or look at snipetts of the data using the `glimpse()` function from the `dplyr` 
+package.
+
+```{r}
+glimpse(d)
+```
+
+And, finally, we can look at some summary statistics for the SSRT.
+
+
+```{r}
+summary(d$SSRT)
+```
+
+
+The mood codes are `1` for Negative and `2` for Neutral. `mutate()` adds a
+column.
+
+```{r}
+d$Mood_induction_condition
+```
+
+
+```{r}
+d <- d %>%
+  mutate(Condition = factor(Mood_induction_condition,
+                            levels = c(1, 2), 
+                            labels = c("Negative", "Neutral")))
+
+d$Condition
+```
+
+Check the new labels with `count()`.
+
+```{r}
+d %>% 
+  count(Sex)
+```
+
+
+`%>%` is called a pipe. It's implemented in the `magrittr` package, included 
+in `tidyverse`. It passes the result on the left to the function on the right. 
+That way you can combine several operations together without needing to reassign
+variables or risk loosing data.
+
+### Practice 1
+
+Can you figure out whether it's a within- or between-participants design?
+Compare the number of rows with the number of distinct participants.
+`unique()` returns distinct values, and `length()` counts them.
+
+```{r}
+length(unique(d$Participant))
+```
+
+
+## Describe SSRT
+
+Let's look at mean, median, standard deviation and variance of SSRT. Standard 
+deviation shows spread in milliseconds. `var()` gives sample variance, 
+using `n - 1`.
+
+```{r}
+d %>%
+  group_by(Sex) %>% 
+  mutate(mean_age = mean(Age, na.rm = TRUE))
+```
+
+`group_by()` repeats the summary for each condition. Let's look justn at the mean
+and standard deviation.
+
+```{r}
+d %>%
+  group_by(Condition) %>%
+  summarise(mean = mean(SSRT, na.rm = TRUE),
+            sd = sd(SSRT, na.rm = TRUE))
+```
+
+What can you tell about the difference between the two conditions based on these
+summary statistics?
+
+### Practice 2
+
+Does the condition with the higher mean SSRT also have the higher median SSRT?
+Use `group_by()` and `summarise()` to calculate both for each condition.
+
+```{r}
+d %>% 
+  group_by(Condition) %>% 
+  summarise(median_per_condition = median(SSRT, na.rm=F))
+```
+
+## Plot SSRT
+
+For plotting, we will be using the `ggplot` package. It operates using the 
+"grammar of graphics" system: each new command adds another layer to the initial
+empty figure instantiated using the `ggplot()` function. 
+
+
+```{r}
+ggplot(d, aes(x = SSRT)) + 
+  geom_histogram()
+```
+
+### Practice 3
+
+Try making the histogram with `binwidth = 10` and then `binwidth = 40`.
+How does the choice of bin width change what you notice about the SSRT values?
+
+
+```{r}
+ggplot(d, aes(x = SSRT)) + 
+  geom_histogram(binwidth = 58)
+```
+
+
+### Practice 4
+
+Can you make a separate SSRT histogram for each condition? Do the two distributions
+look similar?
+
+```{r}
+ggplot(d, aes(x = SSRT, fill=Condition)) + 
+  geom_histogram(binwidth = 10)
+```
+
+## Source
+
+Based on Chapters 1–2 of Daniel Nettle, *From Questions to Knowledge: Data
+Analysis for Psychology and Behavioural Science using R* (2025),
+[online edition](https://bookdown.org/danielnettle2/data_analysis/). Data from
+Paál, Carpenter, and Nettle (2015),
+[“Childhood socioeconomic deprivation, but not current mood, is associated
+with behavioural disinhibition in adults”](https://doi.org/10.7717/peerj.964).
